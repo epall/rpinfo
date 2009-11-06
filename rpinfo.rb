@@ -4,8 +4,8 @@ require 'open-uri'
 require 'uri'
 require 'nokogiri'
 
-class Person
-  attr_reader :name, :email
+class RPIPerson
+  attr_reader :name, :email, :class, :curriculum
 
   def initialize(name)
     @name = name
@@ -39,7 +39,15 @@ class Person
         @email << '?'
       end
     end
+
+    person_page.css('tr th').each do |title|
+      text = title.content.strip
+      if text == 'Class:'
+        @class = title.next.next.content.strip
+      end
+      if text == 'Curriculum:'
+        @curriculum = title.next.next.content.strip
+      end
+    end
   end
 end
-
-puts Person.new(ARGV[0]).email
