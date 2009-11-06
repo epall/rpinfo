@@ -1,0 +1,1 @@
+RPInfo is a web site that provides all kinds of information about RPI and its people. I needed a way to get people's email addresses given their name, so I wrote this tool. Just create an RPIPerson passing the name of the person you want, such as RPIPerson.new('Eric Allen'), then access the person's info with the available accessors: name, email, class, and curriculum.
