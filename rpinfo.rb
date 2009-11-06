@@ -13,7 +13,12 @@ class Person
                         {'query'=>name.gsub(' ', ' AND '), 'datasetName' => 'directory', 'qct' => '10'})
     doc = Nokogiri::HTML(open(res['location']))
     people = doc.css('td.listingName a')
-    top_hit = people[0]
+    top_hit = people.find do |person|
+      first_name = name.split(' ')[0]
+      last_name = name.split(' ')[1]
+      person.content.match(/^#{last_name},\s*#{first_name}/)
+    end
+    raise "Person not found" unless top_hit
     person_url = 'http://prod3.server.rpi.edu/peopledirectory/'+top_hit.attribute('href')
 
     person_page = Nokogiri::HTML(open(person_url))
