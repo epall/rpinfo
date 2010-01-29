@@ -27,8 +27,10 @@ class RPIPerson
     email_glyphs.each do |glyph|
       value = glyph['src'].split('/')[10].split('.')[0].to_i
       case value
-      when 1..27
+      when 1..21
         @email << (value + 'a'[0] - 1).chr
+	  when 22..27
+        @email << (value + 'a'[0]-2).chr
       when 28..36
         @email << (value-28 + '1'[0]).chr
       when 37
