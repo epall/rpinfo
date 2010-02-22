@@ -9,16 +9,22 @@ class RPIPerson
 
   def initialize(name)
     @name = name
-    res = Net::HTTP.post_form(URI.parse('http://prod3.server.rpi.edu/peopledirectory/search.do'),
-                        {'query'=>name.gsub(' ', ' AND '), 'datasetName' => 'directory', 'qct' => '10'})
-    doc = Nokogiri::HTML(open(res['location']))
-    people = doc.css('td.listingName a')
-    top_hit = people.find do |person|
-      first_name = name.split(' ')[0]
-      last_name = name.split(' ')[1]
-      person.content.match(/^#{last_name},\s*#{first_name}/)
+    first_name = name.split(' ')[0]
+    last_name = name.split(' ')[1]
+    top_hit = filter_for_name(name)
+
+    if top_hit.nil?
+      # try just last name
+      people = search_by_name(last_name)
+      top_hit = people.first if people.count == 1
     end
-    raise "Person not found" unless top_hit
+    
+    # try formal first names
+    top_hit ||= filter_for_name("Thomas "+last_name) if first_name == "Tom"
+    top_hit ||= filter_for_name("Pete "+last_name) if first_name == "Peter"
+    top_hit ||= filter_for_name("Joseph "+last_name) if first_name == "Joe"
+    
+    raise "Person not found: #{name}" unless top_hit
     person_url = 'http://prod3.server.rpi.edu/peopledirectory/'+top_hit.attribute('href')
 
     person_page = Nokogiri::HTML(open(person_url))
@@ -35,6 +41,10 @@ class RPIPerson
         @email << (value-28 + '1'[0]).chr
       when 37
         @email << '0'
+      when 38
+        @email << '.'
+      when 39
+        @email << '@'
       when 99
         @email << '@rpi.edu'
       else
@@ -51,5 +61,24 @@ class RPIPerson
         @curriculum = title.next.next.content.strip
       end
     end
+  end
+  
+  private
+  
+  def search_by_name(name)
+    res = Net::HTTP.post_form(URI.parse('http://prod3.server.rpi.edu/peopledirectory/search.do'),
+                        {'query'=>name, 'datasetName' => 'directory', 'qct' => '10'})
+    doc = Nokogiri::HTML(open(res['location']))
+    doc.css('td.listingName a')
+  end
+  
+  def filter_for_name(name)
+    possibilities = search_by_name(name).find_all do |person|
+      first_name = name.split(' ')[0]
+      last_name = name.split(' ')[1]
+      person.content.match(/^#{last_name},\s*#{first_name}/)
+    end
+    raise "Multiple people under name #{name}" if possibilities.count > 1
+    return possibilities.first
   end
 end
